@@ -2,19 +2,50 @@
 <html lang="en">
 
 <head>
-	<link type="text/css" rel="stylesheet" href="css/sandbox.css"/>
+	<title text="title">Othello</title>
+    <link type="text/css" rel="stylesheet" href="css/sandbox.css"/>  
+    <script type="text/javascript" src="https://avramlavinsky.github.io/simple-data-binding/build/simpledatabinding.js"></script>
 </head>
 
 <body>
-hello world
+	<main>
+	
+		<h1>Othello</h1>
+	
+		<div class="boardWrapper">
+			<table class="board">
+				<tr databind="rows">
+					<td databind="columns" childtemplate="'piece'" click="this.logic.placePiece">
+						<!-- render our hint and our piece in markup and simply use bound data attributes and CSS to hide and show-->
+						{{possibleFlips}}
+					</td>
+				</tr>
+			</table>
+		</div>
+		
+		<ul databind="players">
+			<li><span class="currentTurn">{{currentTurn}}</span> to play</li>
+			<li databind="white">White: {{score}}</li>
+			<li databind="black">Black: {{score}}</li>
+			<li><input id="showHints" type="checkbox" name="showHints" value="true" /><label class="checkboxLabel" for="showHints">Show hints </label></li> 
+		</ul>
+	
+	</main>
+	
+	<template id="piece">
+			<!-- render both sides of our piece in markup so CSS can animate flips-->					
+			<div class="piece">
+			<div class="white"></div>
+			<div class="black"></div>
+		</div>
+	</template>
+	
+	<template id="empty">
+		<div></div>
+	</template>
 
-<div class="board">
-	<div class="piece">
-		<div class="white"></div>
-		<div class="black"></div>
-	</div>
-</div>
-
-<script type="text/javascript" src="js/app/sandbox.js"></script>
+	<script type="text/javascript" src="js/app/sandbox.js"></script>
+	
 </body>
+
 </html>
