@@ -138,3 +138,8 @@ ul{
 input[type=checkbox]{
 	display: none;
 }
+
+button{
+	margin-top: 5px;
+	margin-bottom: 5px;
+}

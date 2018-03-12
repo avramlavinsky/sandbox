@@ -15,6 +15,13 @@
 		
 		game.set = function(x,y, value, prop){
 			prop = prop || "value";
+			
+			var data = game.cellBinding(x,y).data,
+				oldValue = data[prop];
+				
+			if(prop === "value"){
+				game.updateScore(value, oldValue);
+			}
 			return game.cellBinding(x,y).data[prop] = value;
 		}
 		
@@ -22,6 +29,17 @@
 			var binding = game.cellBinding(x,y);
 			prop = prop || "value";		
 			return binding && binding.data[prop];
+		}
+		
+		game.updateScore = function(color, oldColor){
+			var playersBindings = game.binding.children.players.children;
+			
+			if(oldColor !== EMPTY){
+				playersBindings[oldColor].data.score--;
+			}
+			if(color !== EMPTY){
+				playersBindings[color].data.score++;
+			}
 		}
 		
 		
@@ -36,8 +54,11 @@
 			return Array(game.boardSize).fill().map(game.makeBoardRow);
 		};
 		
-		game.makeBoardRow = function(){
-			return {columns: Array(game.boardSize).fill(EMPTY)};
+		game.makeBoardRow = function(row, rowIndex){
+			return {columns: Array(game.boardSize).fill().map(function(col, colIndex){
+					return game.state ? game.state.board[rowIndex][colIndex] : EMPTY;
+				})
+			};
 		};
 		
 		game.placeInitialPieces = function(){
@@ -52,15 +73,24 @@
 		};
 
 		game.init = function(){
-			var config = {logic: {placePiece: game.placePiece}},
-				data = {rows: game.makeBoard(boardSize), players: {}, showHints: true};
-				
-			data.players[WHITE] = {score: 0};
+			var config = {logic: game.logic},
+				rawState = localStorage.getItem("othello"),
+				data;
+
+			game.state = rawState && JSON.parse(rawState);
+			data = {players: {}, showHints: game.state ? game.state.data.showHints : true};
 			data.players[BLACK] = {score: 0};
+			data.players[WHITE] = {score: 0};
+			data.rows = game.makeBoard(boardSize), 
 			game.binding = new SimpleDataBinding("body", data, config);
-			game.placeInitialPieces();
-			game.binding.data.currentTurn = WHITE;
+			game.binding.data.currentTurn = game.state ? game.state.data.currentTurn : BLACK;
+			if( game.state){
+				game.logic.clearSaved(false);
+			}else{
+				game.placeInitialPieces();
+			}
 			game.showPossibleFlips();
+			return game;
 		};
 		
 		
@@ -68,6 +98,7 @@
 		//turn
 		
 		game.showPossibleFlips = function(){
+			game.binding.data.pass = "";
 			for(var row = 0; row < game.boardSize; row++){
 				for(var cell = 0; cell < game.boardSize; cell++){
 					game.set(row, cell, game.checkAllVectors(row, cell, game.binding.data.currentTurn) || "", "possibleFlips");
@@ -77,8 +108,8 @@
 		
 		game.checkAllVectors = function(x, y, playerColor){
 			var cellBinding = game.cellBinding(x, y);
-			cellBinding.bindingsToFlip = cellBinding.bindingsToFlip || [];
-			cellBinding.bindingsToFlip.length = 0;	
+			cellBinding.nodesToFlip = cellBinding.nodesToFlip || [];
+			cellBinding.nodesToFlip.length = 0;	
 			possibleFlips = 0;
 			possibleFlips += game.checkVector(x, y, 1, 0, playerColor);
 			possibleFlips += game.checkVector(x, y, 1, -1, playerColor);
@@ -88,6 +119,9 @@
 			possibleFlips += game.checkVector(x, y, -1, 1, playerColor);
 			possibleFlips += game.checkVector(x, y, 0, 1, playerColor);
 			possibleFlips += game.checkVector(x, y, 1, 1, playerColor);
+			if(possibleFlips){
+				game.binding.data.pass = "disabled";
+			}
 			return possibleFlips;
 		};
 
@@ -95,19 +129,19 @@
 			if(game.get(x,y) === EMPTY){				
 				var point = {x: x + xDif, y: y + yDif},
 					sandwiching = false,
-					bindingsToFlip = [];
+					nodesToFlip = [];
 				
 				while(game.checkNeighbor(point, game.oppositeColor(playerColor))){
-					bindingsToFlip.push(game.cellBinding(point.x, point.y));
+					nodesToFlip.push({x: point.x, y: point.y});
 					point.x += xDif;
 					point.y += yDif;
 				}
 				
-				if(bindingsToFlip.length){
+				if(nodesToFlip.length){
 					sandwiching = game.checkNeighbor(point, playerColor);
 					if(sandwiching){
-						game.cellBinding(x,y).bindingsToFlip.push.apply(game.cellBinding(x,y).bindingsToFlip, bindingsToFlip);
-						return bindingsToFlip.length;
+						game.cellBinding(x,y).nodesToFlip.push.apply(game.cellBinding(x,y).nodesToFlip, nodesToFlip);
+						return nodesToFlip.length;
 					}
 				}
 			}			
@@ -115,10 +149,8 @@
 		};
 		
 		game.flipAffectedPieces = function(x, y){
-			var playerBinding = game.binding.children.players.children[game.binding.data.currentTurn];
-			return game.cellBinding(x,y).bindingsToFlip.forEach(function(binding){
-				binding.data.value = game.oppositeColor(binding.data.value);
-				playerBinding.data.score++;
+			return game.cellBinding(x,y).nodesToFlip.forEach(function(node){
+				game.set(node.x,node.y,game.oppositeColor(game.get(node.x,node.y)));
 			});
 		};
 		
@@ -128,6 +160,23 @@
 		
 		game.oppositeColor = function(color){
 			return color === BLACK ? WHITE : BLACK;
+		};
+		
+		game.saveState = function(){
+			var data = game.binding.data,
+				board = game.binding.childArrays.rows.map(function(rowBinding){
+					return rowBinding.childArrays.columns.map(function(columnBinding){
+						return columnBinding.data;
+					})
+				}),
+				playersBindings = game.binding.children.players.children,
+				black = playersBindings[BLACK].data.score,
+				white = playersBindings[WHITE].data.score,
+				state = {data: data, board: board, black: black, white: white};
+			
+			localStorage.setItem("othello", JSON.stringify(state));
+			alert("Game saved.");
+			return state;
 		};
 		
 		game.placePiece = function(e, cell){
@@ -140,6 +189,29 @@
 				game.binding.data.currentTurn = game.oppositeColor(game.binding.data.currentTurn);
 				game.showPossibleFlips();
 			}
+		};
+		
+		
+		// click handlers
+		
+		game.logic = {
+			pass: function(){
+				game.binding.data.currentTurn = game.oppositeColor(game.binding.data.currentTurn);
+				game.showPossibleFlips();
+			},
+			reset: function(){
+				if(confirm("Are you sure you want to reset the game?")){
+					location.reload();
+				}
+			},
+			clearSaved: function(showAlert){
+				localStorage.setItem("othello", "");
+				if(showAlert !== false){
+					alert("Cleared saved from memory.");
+				}
+			},
+			placePiece: game.placePiece,
+			saveState: game.saveState
 		}
 		
 		

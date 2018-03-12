@@ -17,7 +17,7 @@
 				<tr databind="rows">
 					<td databind="columns" childtemplate="'piece'" click="this.logic.placePiece">
 						<!-- render our hint and our piece in markup and simply use bound data attributes and CSS to hide and show-->
-						{{possibleFlips}}
+						<span>{{possibleFlips}}</span>
 					</td>
 				</tr>
 			</table>
@@ -27,7 +27,11 @@
 			<li><span class="currentTurn">{{currentTurn}}</span> to play</li>
 			<li databind="white">White: {{score}}</li>
 			<li databind="black">Black: {{score}}</li>
-			<li><input id="showHints" type="checkbox" name="showHints" value="true" /><label class="checkboxLabel" for="showHints">Show hints </label></li> 
+			<li><input id="showHints" type="checkbox" name="showHints" value="true" /><label class="checkboxLabel" for="showHints">Show hints </label></li>
+			<li><button type="button" __pass__ / click="this.root.logic.pass">Pass</button></li>
+			<li><button type="button" click="this.root.logic.reset">Reset</button></li>
+			<li><button type="button" click="this.root.logic.saveState">Save</button></li>
+			<li><button type="button" click="this.root.logic.clearSaved">Clear Saved</button></li>
 		</ul>
 	
 	</main>
