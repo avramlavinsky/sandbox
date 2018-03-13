@@ -73,15 +73,20 @@
 		};
 
 		game.init = function(){
-			var config = {logic: game.logic},
+			var config = {logic: game.handlers},
 				rawState = localStorage.getItem("othello"),
 				data;
 
 			game.state = rawState && JSON.parse(rawState);
+			if( game.state && ! confirm("Reload last saved game from " + game.state.data.date + "?")){
+				game.state = null;
+			}
 			data = {players: {}, showHints: game.state ? game.state.data.showHints : true};
 			data.players[BLACK] = {score: game.state ? game.state.data[BLACK] : 0};
 			data.players[WHITE] = {score: game.state ? game.state.data[WHITE] : 0};
-			data.rows = game.makeBoard(boardSize), 
+			data.rows = game.makeBoard(boardSize);
+			data.clear = rawState ? "" : "disabled";
+			data.save = game.state ? "disabled" : "";
 			game.binding = new SimpleDataBinding("body", data, config);
 			game.binding.data.currentTurn = game.state ? game.state.data.currentTurn : BLACK;
 			if(! game.state){
@@ -160,25 +165,6 @@
 			return color === BLACK ? WHITE : BLACK;
 		};
 		
-		game.saveState = function(){
-			var data = game.binding.data,
-				board = game.binding.childArrays.rows.map(function(rowBinding){
-					return rowBinding.childArrays.columns.map(function(columnBinding){
-						return columnBinding.data;
-					})
-				}),
-				playersBindings = game.binding.children.players.children,
-				black = playersBindings[BLACK].data.score,
-				white = playersBindings[WHITE].data.score,
-				state = {data: data, board: board};
-			
-			data.black = black;
-			data.white = white;
-			localStorage.setItem("othello", JSON.stringify(state));
-			alert("Game saved.");
-			return state;
-		};
-		
 		game.placePiece = function(e, cell){
 			if(this.data.possibleFlips){
 				var x = cell.cellIndex,
@@ -194,7 +180,7 @@
 		
 		// click handlers
 		
-		game.logic = {
+		game.handlers = {
 			pass: function(){
 				game.binding.data.currentTurn = game.oppositeColor(game.binding.data.currentTurn);
 				game.showPossibleFlips();
@@ -204,14 +190,37 @@
 					location.reload();
 				}
 			},
+			save: function(){
+				var board = game.binding.childArrays.rows.map(function(rowBinding){
+						return rowBinding.childArrays.columns.map(function(columnBinding){
+							return columnBinding.data;
+						})
+					}),
+					playersBindings = game.binding.children.players.children,
+					data = Object.assign({
+						black: playersBindings[BLACK].data.score,
+						white: playersBindings[WHITE].data.score,
+						date: new Date().toLocaleString()
+					}, game.binding.data),
+					state = {data: data, board: board};
+				
+				localStorage.setItem("othello", JSON.stringify(state));
+				game.binding.data.save = "disabled";
+				game.binding.data.clear = "";
+				alert("Game saved.");
+				return state;
+			},
 			clearSaved: function(showAlert){
-				localStorage.setItem("othello", "");
-				if(showAlert !== false){
-					alert("Cleared saved from memory.");
+				if(confirm("Sure you want to clear your saved game?")){
+					localStorage.setItem("othello", "");
+					game.binding.data.clear = "disabled";
+					game.binding.data.save = "";
+					if(showAlert !== false){
+						alert("Cleared saved game from memory.");
+					}
 				}
 			},
-			placePiece: game.placePiece,
-			saveState: game.saveState
+			placePiece: game.placePiece
 		}
 		
 		

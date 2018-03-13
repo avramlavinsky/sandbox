@@ -28,10 +28,10 @@
 			<li databind="white">White: {{score}}</li>
 			<li databind="black">Black: {{score}}</li>
 			<li><input id="showHints" type="checkbox" name="showHints" value="true" /><label class="checkboxLabel" for="showHints">Show hints </label></li>
-			<li><button type="button" __pass__ / click="this.root.logic.pass">Pass</button></li>
+			<li><button type="button" click="this.root.logic.pass" __pass__ >Pass</button></li>
 			<li><button type="button" click="this.root.logic.reset">Reset</button></li>
-			<li><button type="button" click="this.root.logic.saveState">Save</button></li>
-			<li><button type="button" click="this.root.logic.clearSaved">Clear Saved</button></li>
+			<li><button type="button" click="this.root.logic.save" __save__ >Save</button></li>
+			<li><button type="button" click="this.root.logic.clearSaved" __clear__ >Clear Saved</button></li>
 		</ul>
 	
 	</main>
