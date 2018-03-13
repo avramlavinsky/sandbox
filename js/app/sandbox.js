@@ -79,14 +79,12 @@
 
 			game.state = rawState && JSON.parse(rawState);
 			data = {players: {}, showHints: game.state ? game.state.data.showHints : true};
-			data.players[BLACK] = {score: 0};
-			data.players[WHITE] = {score: 0};
+			data.players[BLACK] = {score: game.state ? game.state.data[BLACK] : 0};
+			data.players[WHITE] = {score: game.state ? game.state.data[WHITE] : 0};
 			data.rows = game.makeBoard(boardSize), 
 			game.binding = new SimpleDataBinding("body", data, config);
 			game.binding.data.currentTurn = game.state ? game.state.data.currentTurn : BLACK;
-			if( game.state){
-				game.logic.clearSaved(false);
-			}else{
+			if(! game.state){
 				game.placeInitialPieces();
 			}
 			game.showPossibleFlips();
@@ -172,8 +170,10 @@
 				playersBindings = game.binding.children.players.children,
 				black = playersBindings[BLACK].data.score,
 				white = playersBindings[WHITE].data.score,
-				state = {data: data, board: board, black: black, white: white};
+				state = {data: data, board: board};
 			
+			data.black = black;
+			data.white = white;
 			localStorage.setItem("othello", JSON.stringify(state));
 			alert("Game saved.");
 			return state;
