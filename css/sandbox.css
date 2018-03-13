@@ -43,6 +43,7 @@ h1{
 	text-align: center;
 	color: transparent;
 	cursor: pointer;
+	position: relative;
 }
 
 [data-show-hints="true"] .board td{
@@ -71,15 +72,13 @@ h1{
 	box-shadow: -1px 2px 6px 1px rgba(0, 0, 0, .5);
 	transition: 0.6s;
 	transform-style: preserve-3d;
-	position: relative;
+	position: absolute;
 	left: 5px;
+	top: 5px;
 }
 
 .white, .black {
 	backface-visibility: hidden;
-	position: absolute;
-	top: 0;
-	left: 0;
 }
 
 .white{
@@ -88,6 +87,7 @@ h1{
 
 .black{
 	background-color: #000000;
+	margin-top: -40px;
 }
 
 .black:after {
